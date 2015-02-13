@@ -81,5 +81,19 @@ private:
   TurboJpegRgbPacketProcessorImpl *impl_;
 };
 
+#ifdef LIBFREENECT2_WITH_TEGRA_JPEG_SUPPORT
+class TegraJpegRgbPacketProcessorImpl;
+
+class TegraJpegRgbPacketProcessor : public RgbPacketProcessor
+{
+public:
+  TegraJpegRgbPacketProcessor();
+  virtual ~TegraJpegRgbPacketProcessor();
+protected:
+  virtual void process(const libfreenect2::RgbPacket &packet);
+private:
+  TegraJpegRgbPacketProcessorImpl *impl_;
+};
+#endif //LIBFREENECT2_WITH_TEGRA_JPEG_SUPPORT
 } /* namespace libfreenect2 */
 #endif /* RGB_PACKET_PROCESSOR_H_ */
