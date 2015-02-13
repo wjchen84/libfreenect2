@@ -8,6 +8,7 @@ SET(MY_DIR ${libfreenect2_SOURCE_DIR})
 OPTION(ENABLE_CXX11 "Enable C++11 support" OFF)
 OPTION(ENABLE_OPENCL "Enable OpenCL support" ON)
 OPTION(ENABLE_OPENGL "Enable OpenGL support" ON)
+OPTION(ENABLE_TEGRA_JPEG "Enable accelerated Tegra JPEG library" ON)
 
 IF(ENABLE_CXX11)
   INCLUDE(CheckCXXCompilerFlag)
@@ -105,6 +106,28 @@ SET(RESOURCES
   zTable.bin
 )
 
+IF(ENABLE_TEGRA_JPEG AND EXISTS "/etc/nv_tegra_release")
+  FIND_LIBRARY(TEGRA_JPEG_LIBRARY jpeg PATHS /usr/lib/arm-linux-gnueabihf/tegra NO_DEFAULT_PATH)
+  IF(NOT TEGRA_JPEG_LIBRARY)
+    MESSAGE(FATAL_ERROR "Did not find Tegra JPEG library")
+  ENDIF(NOT TEGRA_JPEG_LIBRARY)
+
+  INCLUDE_DIRECTORIES("${MY_DIR}/../../depends/nv_headers")
+  CHECK_SYMBOL_EXISTS(TEGRA_ACCELERATE "${MY_DIR}/../../depends/nv_headers/jconfig.h" TEGRA_JPEG_HEADERS)
+  IF(NOT TEGRA_JPEG_HEADERS)
+    MESSAGE(FATAL_ERROR "Did not find headers for Tegra JPEG library in ${MY_DIR}/../../depends/nv_headers")
+  ENDIF(NOT TEGRA_JPEG_HEADERS)
+
+  MESSAGE(STATUS "Found Tegra hardware accelerated JPEG support")
+  SET(LIBFREENECT2_WITH_TEGRA_JPEG_SUPPORT 1)
+
+  LIST(APPEND SOURCES
+    src/tegra_jpeg_rgb_packet_processor.cpp
+  )
+  LIST(APPEND LIBRARIES
+    ${TEGRA_JPEG_LIBRARY}
+  )
+ENDIF()
 
 IF(ENABLE_OPENGL)
   SET(LIBFREENECT2_WITH_OPENGL_SUPPORT 1)

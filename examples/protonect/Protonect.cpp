@@ -83,7 +83,15 @@ int main(int argc, char *argv[])
     libfreenect2::Frame *ir = frames[libfreenect2::Frame::Ir];
     libfreenect2::Frame *depth = frames[libfreenect2::Frame::Depth];
 
+#ifndef LIBFREENECT2_WITH_TEGRA_JPEG_SUPPORT
     cv::imshow("rgb", cv::Mat(rgb->height, rgb->width, CV_8UC3, rgb->data));
+#else
+    unsigned char **pprgba = reinterpret_cast<unsigned char **>(rgb->data);
+    cv::Mat rgba(1080, 1920, CV_8UC4, pprgba[0]);
+    cv::Mat bgra(1080, 1920, CV_8UC4);
+    cv::cvtColor(rgba, bgra, cv::COLOR_RGBA2BGRA);
+    cv::imshow("rgb", bgra);
+#endif
     cv::imshow("ir", cv::Mat(ir->height, ir->width, CV_32FC1, ir->data) / 20000.0f);
     cv::imshow("depth", cv::Mat(depth->height, depth->width, CV_32FC1, depth->data) / 4500.0f);
 
