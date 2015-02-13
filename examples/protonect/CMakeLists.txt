@@ -7,6 +7,7 @@ SET(MY_DIR ${libfreenect2_SOURCE_DIR})
 
 OPTION(ENABLE_CXX11 "Enable C++11 support" OFF)
 OPTION(ENABLE_OPENCL "Enable OpenCL support" ON)
+OPTION(ENABLE_CUDA "Enable CUDA support" ON)
 OPTION(ENABLE_OPENGL "Enable OpenGL support" ON)
 OPTION(ENABLE_TEGRA_JPEG "Enable accelerated Tegra JPEG library" ON)
 
@@ -39,6 +40,8 @@ SET(EXECUTABLE_OUTPUT_PATH ${MY_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${MY_DIR}/lib)
 
 FIND_PACKAGE(OpenCL)
+
+FIND_PACKAGE(CUDA)
 
 # dependencies
 FIND_PACKAGE(OpenCV REQUIRED)
@@ -167,6 +170,25 @@ IF(ENABLE_OPENCL AND OPENCL_FOUND)
     src/opencl_depth_packet_processor.cl
   )
 ENDIF(ENABLE_OPENCL AND OPENCL_FOUND)
+
+IF(ENABLE_CUDA AND CUDA_FOUND)
+  MESSAGE(STATUS "CUDA enabled")
+  SET(LIBFREENECT2_WITH_CUDA_SUPPORT 1)
+
+  CUDA_INCLUDE_DIRECTORIES("${MY_DIR}/include/" "${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc")
+  CUDA_COMPILE(CUDA_OBJECTS src/cuda_depth_packet_processor.cu OPTIONS -Xcompiler -fPIC)
+
+  INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
+
+  LIST(APPEND SOURCES
+    src/cuda_depth_packet_processor.cpp
+    ${CUDA_OBJECTS}
+  )
+
+  LIST(APPEND LIBRARIES
+    ${CUDA_LIBRARIES}
+  )
+ENDIF(ENABLE_CUDA AND CUDA_FOUND)
 
 CONFIGURE_FILE("${MY_DIR}/include/libfreenect2/config.h.in" "${MY_DIR}/include/libfreenect2/config.h" @ONLY)
 
