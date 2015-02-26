@@ -39,7 +39,12 @@ void BasePacketPipeline::initialize()
   rgb_parser_ = new RgbPacketStreamParser();
   depth_parser_ = new DepthPacketStreamParser();
 
+#ifdef LIBFREENECT2_WITH_TEGRA_JPEG_SUPPORT
+  rgb_processor_ = new TegraJpegRgbPacketProcessor();
+#else
   rgb_processor_ = new TurboJpegRgbPacketProcessor();
+#endif
+
   depth_processor_ = createDepthPacketProcessor();
 
   async_rgb_processor_ = new AsyncPacketProcessor<RgbPacket>(rgb_processor_);
@@ -135,5 +140,25 @@ DepthPacketProcessor *OpenCLPacketPipeline::createDepthPacketProcessor()
   return depth_processor;
 }
 #endif // LIBFREENECT2_WITH_OPENCL_SUPPORT
+
+#ifdef LIBFREENECT2_WITH_CUDA_SUPPORT
+
+CudaPacketPipeline::CudaPacketPipeline(const int deviceId) : deviceId(deviceId)
+{
+  initialize();
+}
+
+CudaPacketPipeline::~CudaPacketPipeline() { }
+
+DepthPacketProcessor *CudaPacketPipeline::createDepthPacketProcessor()
+{
+  CudaDepthPacketProcessor *depth_processor = new CudaDepthPacketProcessor(deviceId);
+  depth_processor->load11To16LutFromFile("11to16.bin");
+  depth_processor->loadXTableFromFile("xTable.bin");
+  depth_processor->loadZTableFromFile("zTable.bin");
+
+  return depth_processor;
+}
+#endif // LIBFREENECT2_WITH_CUDA_SUPPORT
 
 } /* namespace libfreenect2 */

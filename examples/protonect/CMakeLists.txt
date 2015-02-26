@@ -7,7 +7,9 @@ SET(MY_DIR ${libfreenect2_SOURCE_DIR})
 
 OPTION(ENABLE_CXX11 "Enable C++11 support" OFF)
 OPTION(ENABLE_OPENCL "Enable OpenCL support" ON)
-OPTION(ENABLE_OPENGL "Enable OpenGL support" OFF)
+OPTION(ENABLE_CUDA "Enable CUDA support" ON)
+OPTION(ENABLE_OPENGL "Enable OpenGL support" ON)
+OPTION(ENABLE_TEGRA_JPEG "Enable accelerated Tegra JPEG library" ON)
 
 IF(ENABLE_CXX11)
   INCLUDE(CheckCXXCompilerFlag)
@@ -38,6 +40,8 @@ SET(EXECUTABLE_OUTPUT_PATH ${MY_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${MY_DIR}/lib)
 
 FIND_PACKAGE(OpenCL)
+
+FIND_PACKAGE(CUDA)
 
 # dependencies
 FIND_PACKAGE(OpenCV REQUIRED)
@@ -110,6 +114,28 @@ SET(RESOURCES
   zTable.bin
 )
 
+IF(ENABLE_TEGRA_JPEG AND EXISTS "/etc/nv_tegra_release")
+  FIND_LIBRARY(TEGRA_JPEG_LIBRARY jpeg PATHS /usr/lib/arm-linux-gnueabihf/tegra NO_DEFAULT_PATH)
+  IF(NOT TEGRA_JPEG_LIBRARY)
+    MESSAGE(FATAL_ERROR "Did not find Tegra JPEG library")
+  ENDIF(NOT TEGRA_JPEG_LIBRARY)
+
+  INCLUDE_DIRECTORIES("${MY_DIR}/../../depends/nv_headers")
+  CHECK_SYMBOL_EXISTS(TEGRA_ACCELERATE "${MY_DIR}/../../depends/nv_headers/jconfig.h" TEGRA_JPEG_HEADERS)
+  IF(NOT TEGRA_JPEG_HEADERS)
+    MESSAGE(FATAL_ERROR "Did not find headers for Tegra JPEG library in ${MY_DIR}/../../depends/nv_headers")
+  ENDIF(NOT TEGRA_JPEG_HEADERS)
+
+  MESSAGE(STATUS "Found Tegra hardware accelerated JPEG support")
+  SET(LIBFREENECT2_WITH_TEGRA_JPEG_SUPPORT 1)
+
+  LIST(APPEND SOURCES
+    src/tegra_jpeg_rgb_packet_processor.cpp
+  )
+  LIST(APPEND LIBRARIES
+    ${TEGRA_JPEG_LIBRARY}
+  )
+ENDIF()
 
 IF(ENABLE_OPENGL)
   SET(LIBFREENECT2_WITH_OPENGL_SUPPORT 1)
@@ -149,6 +175,25 @@ IF(ENABLE_OPENCL AND OPENCL_FOUND)
     src/opencl_depth_packet_processor.cl
   )
 ENDIF(ENABLE_OPENCL AND OPENCL_FOUND)
+
+IF(ENABLE_CUDA AND CUDA_FOUND)
+  MESSAGE(STATUS "CUDA enabled")
+  SET(LIBFREENECT2_WITH_CUDA_SUPPORT 1)
+
+  CUDA_INCLUDE_DIRECTORIES("${MY_DIR}/include/" "${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc")
+  CUDA_COMPILE(CUDA_OBJECTS src/cuda_depth_packet_processor.cu OPTIONS -use_fast_math -Xcompiler -fPIC)
+
+  INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
+
+  LIST(APPEND SOURCES
+    src/cuda_depth_packet_processor.cpp
+    ${CUDA_OBJECTS}
+  )
+
+  LIST(APPEND LIBRARIES
+    ${CUDA_LIBRARIES}
+  )
+ENDIF(ENABLE_CUDA AND CUDA_FOUND)
 
 CONFIGURE_FILE("${MY_DIR}/include/libfreenect2/config.h.in" "${MY_DIR}/include/libfreenect2/config.h" @ONLY)
 
