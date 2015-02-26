@@ -7,7 +7,7 @@ SET(MY_DIR ${libfreenect2_SOURCE_DIR})
 
 OPTION(ENABLE_CXX11 "Enable C++11 support" OFF)
 OPTION(ENABLE_OPENCL "Enable OpenCL support" ON)
-OPTION(ENABLE_OPENGL "Enable OpenGL support" ON)
+OPTION(ENABLE_OPENGL "Enable OpenGL support" OFF)
 
 IF(ENABLE_CXX11)
   INCLUDE(CheckCXXCompilerFlag)
@@ -46,8 +46,13 @@ FIND_PACKAGE(OpenCV REQUIRED)
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIR})
 
 # LibUSB
-INCLUDE_DIRECTORIES("${MY_DIR}/../../depends/libusb/include/libusb-1.0/")
-LINK_DIRECTORIES("${MY_DIR}/../../depends/libusb/lib/")
+# INCLUDE_DIRECTORIES("${MY_DIR}/../../depends/libusb/include/libusb-1.0/")
+# LINK_DIRECTORIES("${MY_DIR}/../../depends/libusb/lib/")
+GET_FILENAME_COMPONENT(LIBUSB_DIR "${MY_DIR}/../../depends/libusb/" REALPATH)
+
+INCLUDE_DIRECTORIES("${LIBUSB_DIR}/include/libusb-1.0/")
+LINK_DIRECTORIES("${LIBUSB_DIR}/lib/")
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 IF(ENABLE_OPENGL)
   # GLFW
