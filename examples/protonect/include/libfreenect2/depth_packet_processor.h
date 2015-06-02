@@ -35,7 +35,7 @@
 #include <libfreenect2/packet_processor.h>
 
 #ifdef LIBFREENECT2_WITH_CUDA_SUPPORT
-#include <vector_types.h>
+#include </usr/local/cuda-6.5/include/vector_types.h>
 #endif
 
 namespace libfreenect2
